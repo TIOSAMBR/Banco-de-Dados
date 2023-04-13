@@ -1,0 +1,150 @@
+SAMUEL TOLEDO
+
+CREATE TABLE cliente (
+    pk_cliente SERIAL PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL,
+    cpf VARCHAR(11) UNIQUE NOT NULL
+);
+
+CREATE TABLE cliente_endereco (
+    pk_endereco SERIAL PRIMARY KEY,
+    fk_cliente INTEGER NOT NULL REFERENCES cliente(pk_cliente) ON DELETE CASCADE,
+    logradouro VARCHAR(100) NOT NULL,
+    bairro VARCHAR(50) NOT NULL,
+    cidade VARCHAR(50) NOT NULL,
+    estado VARCHAR(2) DEFAULT 'GO',
+    pais VARCHAR(50) DEFAULT 'Brasil',
+    cep VARCHAR(8) NOT NULL,
+    UNIQUE (fk_cliente, logradouro, bairro, cidade, estado, pais, cep)
+);
+
+CREATE TABLE cargo (
+  pk_cargo SERIAL PRIMARY KEY,
+  nome VARCHAR(100) UNIQUE NOT NULL,
+  descricao TEXT
+);
+
+CREATE TABLE funcionario (
+  pk_funcionario SERIAL PRIMARY KEY,
+  fk_cargo INTEGER NOT NULL,
+  nome VARCHAR(100) NOT NULL,
+  cpf VARCHAR(11) UNIQUE NOT NULL,
+  CONSTRAINT fk_funcionario_cargo FOREIGN KEY (fk_cargo) REFERENCES cargo(pk_cargo) ON DELETE CASCADE
+);
+
+CREATE TABLE funcionario_endereco (
+    pk_endereco SERIAL PRIMARY KEY,
+    fk_funcionario INTEGER NOT NULL,
+    logradouro TEXT NOT NULL,
+    bairro TEXT NOT NULL,
+    cidade TEXT NOT NULL,
+    estado TEXT DEFAULT 'GO',
+    pais TEXT DEFAULT 'Brasil',
+    cep TEXT NOT NULL,
+    CONSTRAINT uc_funcionario_endereco UNIQUE (fk_funcionario, logradouro, bairro, cidade, estado, pais, cep),
+    CONSTRAINT fk_funcionario_endereco FOREIGN KEY (fk_funcionario) REFERENCES funcionario(pk_funcionario) ON DELETE CASCADE
+);
+
+CREATE TABLE produto (
+  pk_produto INT PRIMARY KEY,
+  nome VARCHAR(255) UNIQUE,
+  estoque_minimo INT DEFAULT 100,
+  qtd_estoque INT DEFAULT 0
+);
+
+CREATE SEQUENCE venda_numero_seq
+    INCREMENT BY 1
+    START WITH 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+ALTER TABLE venda
+    ALTER COLUMN numero SET DEFAULT nextval('venda_numero_seq');
+ALTER TABLE venda
+    ADD CONSTRAINT ck_venda_numero CHECK (numero > 0);
+ALTER TABLE venda
+    ADD CONSTRAINT ck_venda_data CHECK (data <= current_date);
+CREATE TABLE venda (
+    pk_venda SERIAL PRIMARY KEY,
+    fk_cliente INTEGER REFERENCES cliente(pk_cliente),
+    fk_vendedor INTEGER REFERENCES funcionario(pk_funcionario),
+    numero INTEGER DEFAULT nextval('venda_numero_seq'),
+    data DATE DEFAULT current_date
+);
+
+CREATE TABLE venda_item (
+  pk_item SERIAL PRIMARY KEY,
+  fk_venda INTEGER REFERENCES venda(pk_venda) ON DELETE CASCADE,
+  fk_produto INTEGER REFERENCES produto(pk_produto) ON DELETE CASCADE,
+  qtd INTEGER NOT NULL CHECK (qtd > 0),
+  valor_unitario NUMERIC(10,2) NOT NULL CHECK (valor_unitario > 0)
+);
+
+CREATE TABLE cliente (
+    pk_cliente INT PRIMARY KEY,
+    nome VARCHAR(50) NOT NULL,
+    cpf VARCHAR(11) UNIQUE NOT NULL
+);
+
+CREATE TABLE fornecedor_endereco (
+  pk_endereco SERIAL PRIMARY KEY,
+  fk_fornecedor INTEGER NOT NULL,
+  logradouro VARCHAR(255) NOT NULL,
+  bairro VARCHAR(255) NOT NULL,
+  cidade VARCHAR(255) NOT NULL,
+  estado VARCHAR(2) DEFAULT 'GO',
+  pais VARCHAR(50) DEFAULT 'Brasil',
+  cep VARCHAR(8) NOT NULL,
+  CONSTRAINT fk_fornecedor FOREIGN KEY (fk_fornecedor) REFERENCES fornecedor (pk_fornecedor),
+  CONSTRAINT uk_fornecedor_endereco UNIQUE (fk_fornecedor, logradouro, bairro, cidade, estado, pais, cep)
+);
+
+```
+CREATE TABLE compra (
+    pk_compra SERIAL PRIMARY KEY,
+    fk_fornecedor INTEGER REFERENCES fornecedor(pk_fornecedor),
+    numero INTEGER NOT NULL,
+    data DATE DEFAULT current_date CHECK (data <= current_date),
+    UNIQUE (fk_fornecedor, numero)
+
+> Samuel Toledo:
+);
+
+CREATE SEQUENCE numero_compra_seq START WITH 1 INCREMENT BY 1;
+
+ALTER TABLE compra ALTER COLUMN numero SET DEFAULT nextval('numero_compra_seq');
+
+CREATE TABLE compra_item (
+  pk_item SERIAL PRIMARY KEY,
+  fk_compra INTEGER NOT NULL,
+  fk_produto INTEGER NOT NULL,
+  qtd INTEGER NOT NULL CHECK(qtd > 0),
+  valor_unitario NUMERIC(10,2) NOT NULL CHECK(valor_unitario > 0),
+  CONSTRAINT fk_compra_item FOREIGN KEY(fk_compra) REFERENCES compra(pk_compra),
+  CONSTRAINT fk_produto_compra_item FOREIGN KEY(fk_produto) REFERENCES produto(pk_produto),
+  CONSTRAINT uq_compra_item UNIQUE (fk_compra, fk_produto)
+);
+
+CREATE TABLE financeiro_entrada (
+    pk_financeiro SERIAL PRIMARY KEY,
+    fk_venda INTEGER NOT NULL,
+    data_emissao DATE NOT NULL DEFAULT CURRENT_DATE,
+    data_vencimento DATE NOT NULL,
+    data_baixa DATE,
+    valor NUMERIC(10,2) NOT NULL CHECK (valor > 0),
+    forma_recebimento VARCHAR(50),
+    FOREIGN KEY (fk_venda) REFERENCES venda(pk_venda),
+    CONSTRAINT data_emissao_nao_retroativa CHECK (data_emissao <= CURRENT_DATE),
+    CONSTRAINT data_vencimento_nao_anterior_emissao CHECK (data_vencimento >= data_emissao),
+    CONSTRAINT data_baixa_nao_anterior_vencimento CHECK (data_baixa IS NULL OR data_baixa >= data_vencimento)
+);
+
+financeiro_saida(
+    pk_financeiro int primary key,
+    fk_compra int not null,
+    data_emissao date not null default current_date,
+    data_vencimento date not null,
+    data_baixa date,
+    valor decimal(10, 2) not null check(valor > 0),
+    forma_pagamento varchar(50)
+);
